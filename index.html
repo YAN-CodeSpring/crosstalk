@@ -1566,7 +1566,7 @@ function App() {
       fontSize: 12,
       lineHeight: 1.8
     }
-  }, "\u9084\u6C92\u6709\u6B4C\u66F2", /*#__PURE__*/React.createElement("br", null), "Go to Exchange to start!")), /*#__PURE__*/React.createElement("div", {
+  }, "\u9084\u6C92\u6709\u6B4C\u66F2", /*#__PURE__*/React.createElement("div", {
     className: `columns ${colClass}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "col claude-col"
@@ -1575,7 +1575,7 @@ function App() {
   }, settings.claudeIcon, " ", settings.claudeName), filtered.map(p => /*#__PURE__*/React.createElement("div", {
     key: `c-${p.id}`,
     ref: el => refs.current[`c-${p.id}`] = el
-  },  /*#__PURE__*/React.createElement(SongCard, {
+  }, /*#__PURE__*/React.createElement(SongCard, {
     song: p.claude_song,
     pair: p,
     expanded: exp === `c-${p.id}`,
@@ -1587,7 +1587,6 @@ function App() {
     settings: settings,
     comments: comments[p.id] || [],
     side: "claude"
-  })
   })))), /*#__PURE__*/React.createElement("div", {
     className: "divider"
   }), /*#__PURE__*/React.createElement("div", {
@@ -1609,7 +1608,8 @@ function App() {
     settings: settings,
     comments: comments[p.id] || [],
     side: "user"
-  })))))), page === "exchange" && /*#__PURE__*/React.createElement("div", {
+  }))))),
+page === "exchange" && /*#__PURE__*/React.createElement("div", {
     className: "exchange"
   }, /*#__PURE__*/React.createElement("div", {
     style: {
