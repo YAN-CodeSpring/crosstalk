@@ -642,6 +642,8 @@ function SongCard({
   onToggle,
   onAddComment,
   onUpdateSong,
+  onAiComment,
+  aiCommenting,
   settings,
   comments,
   side
@@ -877,7 +879,7 @@ function SongCard({
       fontStyle: "italic",
       marginBottom: 8
     }
-  }, "\u9084\u6C92\u6709\u7559\u8A00"), /*#__PURE__*/React.createElement("div", {
+  }, "\u9084\u6C92\u6709\u7559\u8A00"),  /*#__PURE__*/React.createElement("div", {
     className: "comment-input"
   }, /*#__PURE__*/React.createElement("input", {
     placeholder: "\u7559\u8A00...",
@@ -888,7 +890,22 @@ function SongCard({
     }
   }), /*#__PURE__*/React.createElement("button", {
     onClick: post
-  }, "\u21B5")))));
+  }, "\u21B5")), /*#__PURE__*/React.createElement("button", {
+    onClick: function () {
+      onAiComment(pair.id, side);
+    },
+    disabled: aiCommenting === pair.id + "-" + side,
+    style: {
+      fontSize: 10,
+      color: "var(--accent)",
+      background: "none",
+      border: "1px solid var(--light)",
+      padding: "5px 10px",
+      cursor: "pointer",
+      fontFamily: "inherit",
+      marginTop: 8
+    }
+  }, aiCommenting === pair.id + "-" + side ? "AI 留言中..." : "💬 AI 留言")))));
 }
 
 // ─── Tag Filter ─────────────────────────────────────────────────────────
@@ -1153,6 +1170,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [sub, setSub] = useState(false);
+  const [aiResponding, setAiResponding] = useState(null);
+  const [aiAsking, setAiAsking] = useState(false);
+  const [aiCommenting, setAiCommenting] = useState(null);
   const [pairs, setPairs] = useState([]);
   const [comments, setComments] = useState({});
   const [settings, setSettings] = useState({
@@ -1238,6 +1258,59 @@ function App() {
       [pid]: [...(p[pid] || []), r]
     }));
   }, []);
+    const aiRespond = useCallback(async (pid) => {
+    if (aiResponding) return;
+    setAiResponding(pid);
+    try {
+      const r = await api("/ai-respond", "POST", {
+        pair_id: pid
+      });
+      if (r) {
+        setPairs(p => p.map(x => x.id === pid ? r : x));
+        setExp(`c-${pid}`);
+      }
+    } catch (e) {
+      alert("AI 回歌失敗：請確認 DEEPSEEK_API_KEY 已設定，Edge Function 已重新部署，且這組交換還沒有 Claude 回歌。");
+    }
+    setAiResponding(null);
+  }, [aiResponding]);
+
+  const aiAsk = useCallback(async () => {
+    if (aiAsking) return;
+    setAiAsking(true);
+    try {
+      const r = await api("/ai-ask", "POST");
+      if (r) {
+        setPairs(p => [r, ...p]);
+        setPage("home");
+        setExp(`c-${r.id}`);
+      }
+    } catch (e) {
+      alert("AI 出題失敗：請確認 DEEPSEEK_API_KEY 已設定，Edge Function 已重新部署。");
+    }
+    setAiAsking(false);
+  }, [aiAsking]);
+
+  const aiComment = useCallback(async (pid, side) => {
+    const key = pid + "-" + side;
+    if (aiCommenting) return;
+    setAiCommenting(key);
+    try {
+      const r = await api("/ai-comment", "POST", {
+        pair_id: pid,
+        side
+      });
+      if (r) {
+        setComments(p => ({
+          ...p,
+          [pid]: [...(p[pid] || []), r]
+        }));
+      }
+    } catch (e) {
+      alert("AI 留言失敗：請確認 DEEPSEEK_API_KEY 已設定，Edge Function 已重新部署。");
+    }
+    setAiCommenting(null);
+  }, [aiCommenting]);
   const updateSong = useCallback(async (pid, field, songData) => {
     const r = await api(`/pairs/${pid}`, "PATCH", {
       [field]: songData
@@ -1502,16 +1575,19 @@ function App() {
   }, settings.claudeIcon, " ", settings.claudeName), filtered.map(p => /*#__PURE__*/React.createElement("div", {
     key: `c-${p.id}`,
     ref: el => refs.current[`c-${p.id}`] = el
-  }, /*#__PURE__*/React.createElement(SongCard, {
+  },  /*#__PURE__*/React.createElement(SongCard, {
     song: p.claude_song,
     pair: p,
     expanded: exp === `c-${p.id}`,
     onToggle: () => setExp(exp === `c-${p.id}` ? null : `c-${p.id}`),
     onAddComment: addComment,
     onUpdateSong: updateSong,
+    onAiComment: aiComment,
+    aiCommenting: aiCommenting,
     settings: settings,
     comments: comments[p.id] || [],
     side: "claude"
+  })
   })))), /*#__PURE__*/React.createElement("div", {
     className: "divider"
   }), /*#__PURE__*/React.createElement("div", {
@@ -1528,6 +1604,8 @@ function App() {
     onToggle: () => setExp(exp === `u-${p.id}` ? null : `u-${p.id}`),
     onAddComment: addComment,
     onUpdateSong: updateSong,
+    onAiComment: aiComment,
+    aiCommenting: aiCommenting,
     settings: settings,
     comments: comments[p.id] || [],
     side: "user"
@@ -1657,11 +1735,13 @@ function App() {
     placeholder: "\u4F60\u548C\u9019\u9996\u6B4C\u7684\u6545\u4E8B...",
     value: exNote,
     onChange: e => setExNote(e.target.value)
-  }), tagSel(), /*#__PURE__*/React.createElement("button", {
+  }), tagSel(),  /*#__PURE__*/React.createElement("button", {
     className: "submit-btn",
     disabled: !exTheme.trim() || !exSong.trim() || !exArtist.trim() || sub,
     onClick: submitExchange
-  }, sub ? "送出中..." : "送出 Submit →")), exMode === "claude" && /*#__PURE__*/React.createElement("div", {
+  }, sub ? "送出中..." : "送出 Submit →"), /*#__PURE__*/React.createElement("div", {
+    className: "hint"
+  }, "送出後回到卡片庫，點「AI 回歌」即可讓 DeepSeek 自動回應。")), exMode === "claude" && /*#__PURE__*/React.createElement("div", {
     className: "exchange-card"
   }, pending ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1786,7 +1866,26 @@ function App() {
       fontSize: 12,
       lineHeight: 1.8
     }
-  }, "\u76EE\u524D\u6C92\u6709\u5F85\u56DE\u61C9\u7684\u554F\u984C", /*#__PURE__*/React.createElement("br", null), "\u544A\u8A34 ", settings.claudeName, "\u300C\u8A72\u4F60\u51FA\u984C\u4E86\u300D", /*#__PURE__*/React.createElement("br", null), "\u7136\u5F8C\u9EDE \u21BB \u5237\u65B0")), pairs.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "\u76EE\u524D\u6C92\u6709\u5F85\u56DE\u61C9\u7684\u554F\u984C", /*#__PURE__*/React.createElement("br", null), "\u544A\u8A34 ", settings.claudeName, "\u300C\u8A72\u4F60\u51FA\u984C\u4E86\u300D", /*#__PURE__*/React.createElement("br", null), "\u7136\u5F8C\u9EDE \u21BB \u5237\u65B0")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 24,
+      marginBottom: 12,
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn small active",
+    onClick: aiAsk,
+    disabled: aiAsking
+  }, aiAsking ? "AI 出題中..." : "✨ AI 出題"), pairs.filter(p => p.asked_by === "user" && p.user_song && !p.claude_song).slice(0, 1).map(p => /*#__PURE__*/React.createElement("button", {
+    key: p.id,
+    className: "btn small",
+    onClick: function () {
+      aiRespond(p.id);
+    },
+    disabled: aiResponding === p.id
+  }, aiResponding === p.id ? "AI 回歌中..." : "🎵 AI 回歌"))), pairs.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 24
     }
