@@ -2161,16 +2161,16 @@
       }))), /*#__PURE__*/React.createElement("button", {
         className: ms === "user" ? "active" : "",
         onClick: () => setMs("user")
-      }, settings.userName, " ", settings.userIcon)), pairs.length === 0 && /*#__PURE__*/React.createElement("div", {
-        className: "empty-state"
-      }, /*#__PURE__*/React.createElement("div", {
+      }, settings.userName, " ", settings.userIcon)), (pairs.length === 0 || filtered.length > 0) && /*#__PURE__*/React.createElement("div", {
+        className: pairs.length === 0 ? "empty-state" : ""
+      }, pairs.length === 0 && /*#__PURE__*/React.createElement("div", {
         className: "icon"
       }, "\u266B"), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 12,
           lineHeight: 1.8
         }
-      }, "\u9084\u6C92\u6709\u6B4C\u66F2", /*#__PURE__*/React.createElement("div", {
+      }, pairs.length === 0 ? "\u9084\u6C92\u6709\u6B4C\u66F2" : null, /*#__PURE__*/React.createElement("div", {
         className: `columns ${colClass}`
       }, /*#__PURE__*/React.createElement("div", {
         className: "col claude-col"
@@ -2345,7 +2345,7 @@
           onClick: submitExchange
         }, sub ? "送出中..." : "送出 Submit →"), /*#__PURE__*/React.createElement("div", {
           className: "hint"
-        }, "送出後回到卡片庫，點「AI 回歌」即可讓 DeepSeek 自動回應。")), exMode === "claude" && /*#__PURE__*/React.createElement("div", {
+        }, "送出後可照原教程：在聊天中告訴 Claude「該你了，主題是 ___」再點 ↻ 刷新；也可以回到卡片庫點「AI 回歌」讓 DeepSeek 自動回應。")), exMode === "claude" && /*#__PURE__*/React.createElement("div", {
           className: "exchange-card"
         }, pending ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
           style: {
@@ -2522,6 +2522,8 @@
     }
     ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
   </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"45c2bf8136a245cd97f1c2e9a96c0730","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 
 </html>
