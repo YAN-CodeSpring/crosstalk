@@ -634,6 +634,25 @@ function PH({
   }));
 }
 
+function getNeteaseSongId(song) {
+  if (!song) return "";
+  if (song.neteaseId) return String(song.neteaseId);
+  if (song.netease_id) return String(song.netease_id);
+
+  var link = String(song.link || "");
+  var match = link.match(/music\.163\.com\/(?:#\/)?song\?id=(\d+)/) ||
+    link.match(/outchain\/player\?[^#]*[?&]id=(\d+)/) ||
+    link.match(/[?&]id=(\d+)/);
+
+  return match ? match[1] : "";
+}
+
+function getNeteaseEmbedUrl(song) {
+  var id = getNeteaseSongId(song);
+  if (!id) return "";
+  return "https://music.163.com/outchain/player?type=2&id=" + id + "&auto=0&height=66";
+}
+
 // ─── Song Card ──────────────────────────────────────────────────────────
 function SongCard({
   song,
@@ -654,6 +673,7 @@ function SongCard({
   const [editLink, setEditLink] = useState("");
   const [searchRes, setSearchRes] = useState([]);
   const [searching, setSearching] = useState(false);
+  const neteaseEmbedUrl = getNeteaseEmbedUrl(song);
   if (!song) return /*#__PURE__*/React.createElement("div", {
     className: "card-empty"
   }, /*#__PURE__*/React.createElement("div", {
@@ -719,7 +739,21 @@ function SongCard({
     className: "song-title"
   }, song.title), /*#__PURE__*/React.createElement("div", {
     className: "song-artist"
-  }, song.artist), song.link && /*#__PURE__*/React.createElement("a", {
+  }, song.artist), neteaseEmbedUrl ? /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: e => {
+      e.stopPropagation();
+      if (!expanded) onToggle();
+    },
+    className: "listen-link",
+    style: {
+      border: "0",
+      background: "transparent",
+      padding: 0,
+      cursor: "pointer",
+      fontFamily: "inherit"
+    }
+  }, expanded ? "♫ Player ↓" : "♫ 播放 Listen") : song.link && /*#__PURE__*/React.createElement("a", {
     href: song.link,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -746,7 +780,40 @@ function SongCard({
     className: "theme-bar"
   }, "\u21C4 ", pair.theme), song.note && /*#__PURE__*/React.createElement("div", {
     className: "note"
-  }, "\"", song.note, "\""), !editing && /*#__PURE__*/React.createElement("button", {
+  }, "\"", song.note, "\""), neteaseEmbedUrl && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      marginBottom: 8,
+      display: "flex",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("iframe", {
+    frameBorder: "no",
+    border: "0",
+    marginWidth: "0",
+    marginHeight: "0",
+    width: "330",
+    height: "86",
+    src: neteaseEmbedUrl,
+    style: {
+      width: "100%",
+      maxWidth: "330px",
+      height: "86px",
+      border: "0",
+      overflow: "hidden"
+    }
+  })), song.link && neteaseEmbedUrl && /*#__PURE__*/React.createElement("a", {
+    href: song.link,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    onClick: e => e.stopPropagation(),
+    className: "listen-link",
+    style: {
+      display: "inline-block",
+      marginTop: 2,
+      marginBottom: 6
+    }
+  }, "在网易云打开 Open in NetEase ↗"), !editing && /*#__PURE__*/React.createElement("button", {
     onClick: startEdit,
     style: {
       fontSize: 10,
@@ -1922,5 +1989,7 @@ function App() {
 }
 ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
 </script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"45c2bf8136a245cd97f1c2e9a96c0730","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"45c2bf8136a245cd97f1c2e9a96c0730","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body></html>
