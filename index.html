@@ -673,6 +673,7 @@ function SongCard({
   const [editLink, setEditLink] = useState("");
   const [searchRes, setSearchRes] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [autoSearching, setAutoSearching] = useState(false);
   const neteaseEmbedUrl = getNeteaseEmbedUrl(song);
   if (!song) return /*#__PURE__*/React.createElement("div", {
     className: "card-empty"
@@ -696,10 +697,13 @@ function SongCard({
   };
   const saveEdit = async e => {
     e.stopPropagation();
+    const nextId = getNeteaseSongId({ link: editLink });
     const updated = {
       ...song,
       cover: editCover,
-      link: editLink
+      link: editLink,
+      neteaseId: nextId || song.neteaseId || song.netease_id || "",
+      embedUrl: nextId ? getNeteaseEmbedUrl({ neteaseId: nextId }) : song.embedUrl || song.embed_url || ""
     };
     const field = side === "claude" ? "claude_song" : "user_song";
     await onUpdateSong(pair.id, field, updated);
@@ -719,9 +723,38 @@ function SongCard({
     setSearching(false);
   };
   const pickRes = r => {
-    setEditCover(r.cover);
-    setEditLink(r.link);
+    setEditCover(r.cover || "");
+    setEditLink(r.link || "");
     setSearchRes([]);
+  };
+  const fillNeteaseAndPlay = async e => {
+    e.stopPropagation();
+    if (autoSearching) return;
+    setAutoSearching(true);
+    try {
+      const q = `${song.artist || ""} ${song.title || ""}`.trim();
+      const r = await api(`/search?q=${encodeURIComponent(q)}`);
+      const first = Array.isArray(r) ? r.find(x => x && x.neteaseId) || r[0] : null;
+      if (first && first.link) {
+        const nextId = first.neteaseId || getNeteaseSongId(first);
+        const updated = {
+          ...song,
+          cover: first.cover || song.cover || "",
+          link: first.link || song.link || "",
+          album: first.album || song.album || "",
+          neteaseId: nextId || "",
+          embedUrl: nextId ? getNeteaseEmbedUrl({ neteaseId: nextId }) : first.embedUrl || ""
+        };
+        const field = side === "claude" ? "claude_song" : "user_song";
+        await onUpdateSong(pair.id, field, updated);
+        if (!expanded) onToggle();
+      } else {
+        alert("没有从网易云搜到这首歌。你可以点编辑，手动粘贴网易云歌曲链接。")
+      }
+    } catch (err) {
+      alert("网易云搜索失败。你可以点编辑，手动粘贴网易云歌曲链接。")
+    }
+    setAutoSearching(false);
   };
   return /*#__PURE__*/React.createElement("div", {
     className: `card ${expanded ? "expanded" : ""}`,
@@ -753,13 +786,19 @@ function SongCard({
       cursor: "pointer",
       fontFamily: "inherit"
     }
-  }, expanded ? "♫ 播放器已展开" : "♫ 在页面内播放") : song.link && /*#__PURE__*/React.createElement("a", {
-    href: song.link,
-    target: "_blank",
-    rel: "noopener noreferrer",
-    onClick: e => e.stopPropagation(),
-    className: "listen-link"
-  }, "\u266B Listen \u2192"), /*#__PURE__*/React.createElement("div", {
+  }, expanded ? "♫ 播放器已展开" : "♫ 在页面内播放") : /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: fillNeteaseAndPlay,
+    disabled: autoSearching,
+    className: "listen-link",
+    style: {
+      border: "0",
+      background: "transparent",
+      padding: 0,
+      cursor: autoSearching ? "wait" : "pointer",
+      fontFamily: "inherit"
+    }
+  }, autoSearching ? "正在搜网易云..." : "♫ 搜索网易云播放"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 6
     }
@@ -804,14 +843,36 @@ function SongCard({
       border: "0",
       overflow: "hidden"
     }
-  })), !neteaseEmbedUrl && song.link && /*#__PURE__*/React.createElement("div", {
+  })), !neteaseEmbedUrl && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: "var(--muted)",
       marginTop: 8,
       marginBottom: 6
     }
-  }, "这首歌还不是网易云播放源；点下面的编辑/搜索，可以换成网易云链接后在页面内播放。"), song.link && neteaseEmbedUrl && /*#__PURE__*/React.createElement("a", {
+  }, "这首歌还没有网易云播放源。点下面按钮会用歌名和歌手自动搜索网易云，找到后会保存到这张卡片并展开播放器。"), !neteaseEmbedUrl && /*#__PURE__*/React.createElement("button", {
+    onClick: fillNeteaseAndPlay,
+    disabled: autoSearching,
+    className: "btn small active",
+    style: {
+      fontSize: 10,
+      padding: "6px 10px",
+      marginTop: 4,
+      marginBottom: 8
+    }
+  }, autoSearching ? "正在搜网易云..." : "🔎 补全网易云并播放"), song.link && !neteaseEmbedUrl && /*#__PURE__*/React.createElement("a", {
+    href: song.link,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    onClick: e => e.stopPropagation(),
+    className: "listen-link",
+    style: {
+      display: "inline-block",
+      marginLeft: 8,
+      marginTop: 2,
+      marginBottom: 6
+    }
+  }, "打开原链接 ↗"), song.link && neteaseEmbedUrl && /*#__PURE__*/React.createElement("a", {
     href: song.link,
     target: "_blank",
     rel: "noopener noreferrer",
