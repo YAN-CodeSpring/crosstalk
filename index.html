@@ -714,7 +714,7 @@ function SongCard({
     e.stopPropagation();
     setSearching(true);
     try {
-      const q = `${song.artist} ${song.title}`;
+      const q = `${song.title || ""} ${song.artist || ""}`.trim();
       const r = await api(`/search?q=${encodeURIComponent(q)}`);
       setSearchRes(r || []);
     } catch (e) {
@@ -732,7 +732,7 @@ function SongCard({
     if (autoSearching) return;
     setAutoSearching(true);
     try {
-      const q = `${song.artist || ""} ${song.title || ""}`.trim();
+      const q = `${song.title || ""} ${song.artist || ""}`.trim();
       const r = await api(`/search?q=${encodeURIComponent(q)}`);
       const first = Array.isArray(r) ? r.find(x => x && x.neteaseId) || r[0] : null;
       if (first && first.link) {
@@ -1481,7 +1481,7 @@ function App() {
     if (!exSong.trim() && !exArtist.trim()) return;
     setSearching(true);
     try {
-      const q = `${exArtist.trim()} ${exSong.trim()}`;
+      const q = `${exSong.trim()} ${exArtist.trim()}`;
       const results = await api(`/search?q=${encodeURIComponent(q)}`);
       setSearchResults(results || []);
     } catch (e) {
@@ -1512,7 +1512,11 @@ function App() {
     setSearchResults([]);
   }
   async function submitExchange() {
-    if (!exTheme.trim() || !exSong.trim() || !exArtist.trim() || sub) return;
+    if (sub) return;
+    if (!exSong.trim() || !exArtist.trim()) {
+      alert("请至少填写歌名和艺人。主题可以留空，我会自动用歌名生成一个主题。");
+      return;
+    }
     setSub(true);
     try {
       const song = {
@@ -1539,7 +1543,7 @@ function App() {
         }
       }
       const r = await api("/pairs", "POST", {
-        theme: exTheme.trim(),
+        theme: exTheme.trim() || `关于「${exSong.trim()}」的一次交换`,
         asked_by: "user",
         user_song: song,
         claude_song: null
@@ -1558,7 +1562,11 @@ function App() {
     }
   }
   async function respondToQ(pid) {
-    if (!exSong.trim() || !exArtist.trim() || sub) return;
+    if (sub) return;
+    if (!exSong.trim() || !exArtist.trim()) {
+      alert("请至少填写歌名和艺人，再提交你的回应。");
+      return;
+    }
     setSub(true);
     try {
       const song = {
@@ -1958,7 +1966,7 @@ function App() {
     onChange: e => setExNote(e.target.value)
   }), tagSel(), /*#__PURE__*/React.createElement("button", {
     className: "submit-btn",
-    disabled: !exTheme.trim() || !exSong.trim() || !exArtist.trim() || sub,
+    disabled: sub,
     onClick: submitExchange
   }, sub ? "送出中..." : "送出 Submit →")), exMode === "claude" && /*#__PURE__*/React.createElement("div", {
     className: "exchange-card"
@@ -2075,7 +2083,7 @@ function App() {
     onChange: e => setExNote(e.target.value)
   }), tagSel(), /*#__PURE__*/React.createElement("button", {
     className: "submit-btn",
-    disabled: !exSong.trim() || !exArtist.trim() || sub,
+    disabled: sub,
     onClick: () => respondToQ(pending.id)
   }, sub ? "送出中..." : "回應 Respond →")) : /*#__PURE__*/React.createElement("div", {
     style: {
