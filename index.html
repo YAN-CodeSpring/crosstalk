@@ -1096,7 +1096,8 @@ function TagFilter({
 function HistCard({
   pair: p,
   settings: s,
-  onClick
+  onClick,
+  onRespond
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "hist-card",
@@ -1168,7 +1169,19 @@ function HistCard({
     style: {
       fontSize: 14
     }
-  }, s.userIcon))));
+  }, s.userIcon))), p.asked_by === "claude" && !p.user_song && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn small active",
+    onClick: e => {
+      e.stopPropagation();
+      onRespond && onRespond(p);
+    },
+    style: {
+      marginTop: 10,
+      fontSize: 10,
+      padding: "6px 10px"
+    }
+  }, "回应这道题 Respond →"));
 }
 
 // ─── Settings Modal ─────────────────────────────────────────────────────
@@ -1321,6 +1334,7 @@ function App() {
   });
   const [customTags, setCustomTags] = useState([]);
   const [exMode, setExMode] = useState("user");
+  const [respondingPairId, setRespondingPairId] = useState(null);
   const [exTheme, setExTheme] = useState("");
   const [exSong, setExSong] = useState("");
   const [exArtist, setExArtist] = useState("");
@@ -1420,6 +1434,7 @@ function App() {
       const r = await api("/ai-ask", "POST");
       if (r) {
         setPairs(p => [r, ...p]);
+        setRespondingPairId(r.id);
         setPage("exchange");
         setExMode("claude");
       }
@@ -1497,74 +1512,105 @@ function App() {
     setSearchResults([]);
   }
   async function submitExchange() {
-    if (!exTheme.trim() || !exSong.trim() || !exArtist.trim()) return;
+    if (!exTheme.trim() || !exSong.trim() || !exArtist.trim() || sub) return;
     setSub(true);
-    const song = {
-      title: exSong.trim(),
-      artist: exArtist.trim(),
-      album: exAlbum.trim(),
-      cover: exCover,
-      link: exLink,
-      neteaseId: exNeteaseId,
-      note: exNote.trim(),
-      tags: {
-        ...exTags
+    try {
+      const song = {
+        title: exSong.trim(),
+        artist: exArtist.trim(),
+        album: exAlbum.trim(),
+        cover: exCover,
+        link: exLink,
+        neteaseId: exNeteaseId,
+        embedUrl: exNeteaseId ? getNeteaseEmbedUrl({ neteaseId: exNeteaseId }) : "",
+        note: exNote.trim(),
+        tags: {
+          ...exTags
+        }
+      };
+      if (exCust.trim()) {
+        song.tags.custom = exCust.trim();
+        if (!customTags.includes(exCust.trim())) {
+          const nt = [...customTags, exCust.trim()];
+          setCustomTags(nt);
+          api("/settings", "PATCH", {
+            custom_tags: nt
+          });
+        }
       }
-    };
-    if (exCust.trim()) {
-      song.tags.custom = exCust.trim();
-      if (!customTags.includes(exCust.trim())) {
-        const nt = [...customTags, exCust.trim()];
-        setCustomTags(nt);
-        api("/settings", "PATCH", {
-          custom_tags: nt
-        });
+      const r = await api("/pairs", "POST", {
+        theme: exTheme.trim(),
+        asked_by: "user",
+        user_song: song,
+        claude_song: null
+      });
+      if (r) {
+        setPairs(p => [r, ...p]);
+        clearForm();
+        setRespondingPairId(null);
+        setPage("home");
+        setExp(`u-${r.id}`);
       }
+    } catch (e) {
+      alert("提交失败：" + (e && e.message ? e.message : "请检查 Supabase / Edge Function 是否正常。"));
+    } finally {
+      setSub(false);
     }
-    const r = await api("/pairs", "POST", {
-      theme: exTheme.trim(),
-      asked_by: "user",
-      user_song: song,
-      claude_song: null
-    });
-    if (r) setPairs(p => [r, ...p]);
-    clearForm();
-    setSub(false);
   }
   async function respondToQ(pid) {
-    if (!exSong.trim() || !exArtist.trim()) return;
+    if (!exSong.trim() || !exArtist.trim() || sub) return;
     setSub(true);
-    const song = {
-      title: exSong.trim(),
-      artist: exArtist.trim(),
-      album: exAlbum.trim(),
-      cover: exCover,
-      link: exLink,
-      neteaseId: exNeteaseId,
-      note: exNote.trim(),
-      tags: {
-        ...exTags
+    try {
+      const song = {
+        title: exSong.trim(),
+        artist: exArtist.trim(),
+        album: exAlbum.trim(),
+        cover: exCover,
+        link: exLink,
+        neteaseId: exNeteaseId,
+        embedUrl: exNeteaseId ? getNeteaseEmbedUrl({ neteaseId: exNeteaseId }) : "",
+        note: exNote.trim(),
+        tags: {
+          ...exTags
+        }
+      };
+      if (exCust.trim()) {
+        song.tags.custom = exCust.trim();
+        if (!customTags.includes(exCust.trim())) {
+          const nt = [...customTags, exCust.trim()];
+          setCustomTags(nt);
+          api("/settings", "PATCH", {
+            custom_tags: nt
+          });
+        }
       }
-    };
-    if (exCust.trim()) {
-      song.tags.custom = exCust.trim();
-      if (!customTags.includes(exCust.trim())) {
-        const nt = [...customTags, exCust.trim()];
-        setCustomTags(nt);
-        api("/settings", "PATCH", {
-          custom_tags: nt
-        });
+      const r = await api(`/pairs/${pid}`, "PATCH", {
+        user_song: song
+      });
+      if (r) {
+        setPairs(p => p.map(x => x.id === pid ? r : x));
+        clearForm();
+        setRespondingPairId(null);
+        setPage("home");
+        setExp(`u-${pid}`);
       }
+    } catch (e) {
+      alert("回应失败：" + (e && e.message ? e.message : "请检查 Supabase / Edge Function 是否正常。"));
+    } finally {
+      setSub(false);
     }
-    const r = await api(`/pairs/${pid}`, "PATCH", {
-      user_song: song
-    });
-    if (r) setPairs(p => p.map(x => x.id === pid ? r : x));
+  }
+  function startRespondToPair(pair) {
     clearForm();
-    setSub(false);
+    setRespondingPairId(pair?.id || null);
+    setExMode("claude");
+    setPage("exchange");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
   }
   const has = pairs.some(p => p.claude_song || p.user_song);
-  const pending = pairs.find(p => p.asked_by === "claude" && !p.user_song);
+  const pending = respondingPairId
+    ? pairs.find(p => p.id === respondingPairId && p.asked_by === "claude" && !p.user_song)
+    : pairs.find(p => p.asked_by === "claude" && !p.user_song);
   const pendingAiResponse = pairs.find(p => p.asked_by === "user" && p.user_song && !p.claude_song);
   if (loading) return /*#__PURE__*/React.createElement("div", {
     className: "loading"
@@ -1759,10 +1805,18 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("button", {
     className: `btn ${exMode === "user" ? "active" : ""}`,
-    onClick: () => setExMode("user")
+    onClick: () => {
+      clearForm();
+      setRespondingPairId(null);
+      setExMode("user");
+    }
   }, "\u4F60\u51FA\u984C You Ask"), /*#__PURE__*/React.createElement("button", {
     className: `btn ${exMode === "claude" ? "active" : ""}`,
-    onClick: () => setExMode("claude")
+    onClick: () => {
+      clearForm();
+      setRespondingPairId(null);
+      setExMode("claude");
+    }
   }, settings.claudeName, " \u51FA\u984C")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -2046,7 +2100,8 @@ function App() {
     key: p.id,
     pair: p,
     settings: settings,
-    onClick: () => jump(p.id)
+    onClick: () => jump(p.id),
+    onRespond: startRespondToPair
   })))), /*#__PURE__*/React.createElement("div", {
     className: "footer"
   }, "CROSSTALK \xB7 \u266B"), scrollTop && /*#__PURE__*/React.createElement("button", {
