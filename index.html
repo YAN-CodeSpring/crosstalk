@@ -753,7 +753,7 @@ function SongCard({
       cursor: "pointer",
       fontFamily: "inherit"
     }
-  }, expanded ? "♫ Player ↓" : "♫ 播放 Listen") : song.link && /*#__PURE__*/React.createElement("a", {
+  }, expanded ? "♫ 播放器已展开" : "♫ 在页面内播放") : song.link && /*#__PURE__*/React.createElement("a", {
     href: song.link,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -795,6 +795,8 @@ function SongCard({
     width: "330",
     height: "86",
     src: neteaseEmbedUrl,
+    title: "NetEase Cloud Music Player",
+    allow: "autoplay; encrypted-media",
     style: {
       width: "100%",
       maxWidth: "330px",
@@ -802,7 +804,14 @@ function SongCard({
       border: "0",
       overflow: "hidden"
     }
-  })), song.link && neteaseEmbedUrl && /*#__PURE__*/React.createElement("a", {
+  })), !neteaseEmbedUrl && song.link && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "var(--muted)",
+      marginTop: 8,
+      marginBottom: 6
+    }
+  }, "这首歌还不是网易云播放源；点下面的编辑/搜索，可以换成网易云链接后在页面内播放。"), song.link && neteaseEmbedUrl && /*#__PURE__*/React.createElement("a", {
     href: song.link,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -1257,6 +1266,7 @@ function App() {
   const [exAlbum, setExAlbum] = useState("");
   const [exCover, setExCover] = useState("");
   const [exLink, setExLink] = useState("");
+  const [exNeteaseId, setExNeteaseId] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [exNote, setExNote] = useState("");
@@ -1409,6 +1419,7 @@ function App() {
     setExAlbum(r.album);
     setExCover(r.cover);
     setExLink(r.link);
+    setExNeteaseId(r.neteaseId || r.netease_id || "");
     setSearchResults([]);
   }
   function clearForm() {
@@ -1421,6 +1432,7 @@ function App() {
     setExCust("");
     setExCover("");
     setExLink("");
+    setExNeteaseId("");
     setSearchResults([]);
   }
   async function submitExchange() {
@@ -1432,6 +1444,7 @@ function App() {
       album: exAlbum.trim(),
       cover: exCover,
       link: exLink,
+      neteaseId: exNeteaseId,
       note: exNote.trim(),
       tags: {
         ...exTags
@@ -1466,6 +1479,7 @@ function App() {
       album: exAlbum.trim(),
       cover: exCover,
       link: exLink,
+      neteaseId: exNeteaseId,
       note: exNote.trim(),
       tags: {
         ...exTags
